@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>고마워랑 재고관리</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2c5f8a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="재고관리">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg: #f5f3ef;
+    --card: #ffffff;
+    --border: #e8e4dc;
+    --text: #1a1a18;
+    --muted: #7a7870;
+    --empty: #e8453c;
+    --danger: #f07b2a;
+    --warning: #e8b84b;
+    --safe: #4caf7d;
+    --accent: #2c5f8a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span {
+    font-weight: 300;
+    color: var(--muted);
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  .header-right {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .summary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 20px 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .stat-card:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+  .stat-card.active { border-color: currentColor; }
+
+  .stat-card .label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stat-card .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .stat-card .number {
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-card .sub { font-size: 12px; color: var(--muted); }
+
+  .stat-card.c-empty { color: var(--empty); }
+  .stat-card.c-danger { color: var(--danger); }
+  .stat-card.c-warning { color: var(--warning); }
+  .stat-card.c-safe { color: var(--safe); }
+
+  .controls {
+    padding: 0 24px 16px;
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-box {
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+  }
+
+  .search-box input {
+    width: 100%;
+    padding: 10px 16px 10px 38px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input:focus { border-color: var(--accent); }
+
+  .search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+  }
+
+  .sort-select {
+    padding: 10px 14px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .result-count {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .table-wrap {
+    padding: 0 24px 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--card);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  thead tr {
+    background: #f9f8f5;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #faf9f7; }
+
+  td {
+    padding: 12px 16px;
+    vertical-align: middle;
+  }
+
+  .product-name {
+    max-width: 320px;
+    font-weight: 500;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge-empty { background: #ffeeed; color: var(--empty); }
+  .badge-danger { background: #fff3ec; color: var(--danger); }
+  .badge-warning { background: #fdf8ec; color: #b8851a; }
+  .badge-safe { background: #edf7f2; color: #2e8a58; }
+
+  .stock-total {
+    font-weight: 700;
+    font-size: 15px;
+  }
+
+  .stock-total.empty { color: var(--empty); }
+  .stock-total.danger { color: var(--danger); }
+  .stock-total.warning { color: #b8851a; }
+  .stock-total.safe { color: #2e8a58; }
+
+  .size-inputs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .size-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .size-label {
+    font-size: 9px;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+
+  .size-input {
+    width: 52px;
+    padding: 5px 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    color: var(--text);
+    background: #faf9f7;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .size-input:focus {
+    border-color: var(--accent);
+    background: white;
+  }
+
+  .price {
+    font-size: 13px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .status-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .status-selling { background: #edf7f2; color: #2e8a58; }
+  .status-soldout { background: #ffeeed; color: var(--empty); }
+  .status-stop { background: #f5f3ef; color: var(--muted); }
+
+  .save-btn {
+    padding: 6px 14px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+  }
+
+  .save-btn:hover { opacity: 0.85; }
+  .save-btn.saved { background: var(--safe); }
+
+  .notice-bar {
+    background: #fff8e6;
+    border: 1px solid #f0d070;
+    border-radius: 8px;
+    padding: 10px 16px;
+    margin: 0 24px 16px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+    font-size: 12px;
+    color: #7a6010;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+
+  .filter-tabs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .filter-tab {
+    padding: 7px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    background: var(--card);
+    color: var(--muted);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .filter-tab:hover { border-color: var(--accent); color: var(--accent); }
+  .filter-tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+  @media (max-width: 768px) {
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .product-name { max-width: 160px; font-size: 12px; }
+    .size-inputs { flex-direction: column; gap: 3px; }
+    .size-input { width: 46px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">고마워랑 재고관리 <span>Inventory Dashboard</span></div>
+  <div class="header-right" id="lastSaved">저장되지 않음</div>
+</header>
+
+<div class="summary" id="summary"></div>
+
+<div style="padding: 0 24px 12px; max-width:1200px; margin:0 auto;">
+  <div class="notice-bar">
+    ⚠️ 합계 재고는 스마트스토어에서 자동으로 가져온 값이에요. 사이즈별 재고는 직접 입력 후 저장하세요. 브라우저를 닫아도 유지돼요.
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-box">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
+    <input type="text" id="searchInput" placeholder="상품명 검색..." oninput="render()">
+  </div>
+  <div class="filter-tabs" id="filterTabs">
+    <button class="filter-tab active" onclick="setFilter('all', this)">전체</button>
+    <button class="filter-tab" onclick="setFilter('empty', this)" style="color:var(--empty)">품절</button>
+    <button class="filter-tab" onclick="setFilter('danger', this)" style="color:var(--danger)">위험(1~3)</button>
+    <button class="filter-tab" onclick="setFilter('warning', this)" style="color:#b8851a">주의(4~6)</button>
+    <button class="filter-tab" onclick="setFilter('safe', this)" style="color:var(--safe)">안전(7+)</button>
+  </div>
+  <select class="sort-select" id="sortSelect" onchange="render()">
+    <option value="stock_asc">재고 적은순</option>
+    <option value="stock_desc">재고 많은순</option>
+    <option value="name_asc">상품명순</option>
+    <option value="date_desc">최신등록순</option>
+  </select>
+  <span class="result-count" id="resultCount"></span>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:40px">#</th>
+        <th>상품명</th>
+        <th>합계재고</th>
+        <th>30×40</th>
+        <th>40×60</th>
+        <th>50×70</th>
+        <th>판매가</th>
+        <th>상태</th>
+        <th>저장</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+  <div class="empty-state" id="emptyState" style="display:none">검색 결과가 없어요 😅</div>
+</div>
+
+<script>
+const RAW = [{"name":"펠릭스 발로통 석양 일몰 일출 인테리어 명화 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2026-02-27"},{"name":"돈 들어오는 그림 고래 액자 현관 거실 풍수 인테리어 개업선물","stock":3,"price":"9800","status":"판매중","level":"danger","registered":"2026-01-09"},{"name":"불면증 힐링 그림 마음이 편안해지는 초록색 거실 아트 포스터 액자","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2025-12-26"},{"name":"대형 파도 장줄리앙 거실 인테리어 액자 시원한 여름 서핑 포스터","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2025-12-24"},{"name":"체인소맨 아트포스터 팬아트 일러스트","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2025-11-28"},{"name":"삐삐롱스타킹 캐릭터 포스터 액자 북유럽 아동방 인테리어 그림","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2025-11-14"},{"name":"아이방 거실 북카페 인테리어 동화 복금곰 일러스트","stock":3,"price":"9800","status":"판매중","level":"danger","registered":"2025-09-26"},{"name":"펠릭스 발로통 일몰 sunset 평화로운 풍경화 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2025-09-23"},{"name":"굿럿 짱구 핑크 패밀리 응원 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2025-08-29"},{"name":"미스터 두들 해피 플라워 부케 팝아트 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2025-06-13"},{"name":"포켓몬스터 캐릭터 대집합 컬렉션 액자 아이방 인테리어 조카선물 생일선물","stock":13,"price":"9800","status":"판매중","level":"safe","registered":"2025-05-23"},{"name":"미니멀 인체 드로잉 현대미술 소피아린드 포스터","stock":6,"price":"9800","status":"판매중","level":"warning","registered":"2025-05-07"},{"name":"레트로 무드 동양화 감나무 캔버스 액자","stock":4,"price":"29800","status":"판매중","level":"warning","registered":"2025-03-28"},{"name":"미니멀리즘 현대미술 슈리글리 아트 타이포그래피 포스터","stock":24,"price":"7200","status":"판매중","level":"safe","registered":"2025-03-21"},{"name":"인물화 손그림 소라야마하지메 잔다르크 포스터 500x700mm, 블랙","stock":1,"price":"49800","status":"판매중","level":"danger","registered":"2025-03-06"},{"name":"따뜻한 감성 휴양지 풍경 인테리어 사진","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2025-03-04"},{"name":"소피아보나티 미니멀 핸드드로잉 여성 초상화 포스터","stock":10,"price":"10800","status":"판매중","level":"safe","registered":"2025-02-21"},{"name":"프리덴스라이히 훈데르트바서 추상화 명화 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2025-02-07"},{"name":"심슨가족 대형 비틀즈 콜라보 포스터 600x800mm, 무광블랙","stock":0,"price":"66000","status":"품절","level":"empty","registered":"2025-01-23"},{"name":"귀여운 토토로 애니 지브리 풍경 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2025-01-23"},{"name":"빈티지 민화 호리명 화조도 포스터 작품","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2025-01-17"},{"name":"사이키델릭 디지털 추상화 아트 포스터","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2025-01-03"},{"name":"일출 일물 자연 풍경 명화 목판화 펠릭스 발로통 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-12-13"},{"name":"흑백 목판화 인물화 미니멀리즘 Aoki Tetsuo 포스터","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2024-12-07"},{"name":"돈들어오는그림 대형 풍경 바다 일출 캔버스 액자 500x1000mm, 캔버스액자","stock":1,"price":"79800","status":"판매중","level":"danger","registered":"2024-11-21"},{"name":"미니멀 보라색 플로럴 여성 꽃무늬 일러스트","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-11-18"},{"name":"고양이 바나나 동물 미니멀 일러스트 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-11-06"},{"name":"구스타프 명화 검은 고양이 콜라보 액자 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-10-31"},{"name":"흑백 모노크롬 인물화 미니멀리즘 소피아린드 포스터","stock":3,"price":"7800","status":"판매중","level":"danger","registered":"2024-10-24"},{"name":"캐릭터 고라파덕 낙서 일러스트 어린이방 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-10-18"},{"name":"꽃그림 유화 추상화 식물 인테리어 포스터 액자","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-10-11"},{"name":"몽환적 여성 파스텔 인물화 현대미술","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-10-07"},{"name":"반고흐 블라썸 아몬드 나무 명화 액자 3종","stock":3,"price":"135900","status":"판매중","level":"danger","registered":"2024-09-26"},{"name":"귀여운 고양이 초상화 동물 일러스트 캔버스 액자","stock":3,"price":"29800","status":"판매중","level":"danger","registered":"2024-09-20"},{"name":"미니멀리즘 빈티지 여성 일러스트 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-09-12"},{"name":"복이들어오는 풍수 해바라기 캔버스 액자","stock":4,"price":"29800","status":"판매중","level":"warning","registered":"2024-09-04"},{"name":"여성 현대 초상화 비비드컬러 인물화 아트","stock":12,"price":"7800","status":"판매중","level":"safe","registered":"2024-08-28"},{"name":"키스해링 하트 팝아트 현대미술 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2024-08-23"},{"name":"차분한 여성 인물화 소피아린드 모던 액자","stock":11,"price":"9800","status":"판매중","level":"safe","registered":"2024-08-12"},{"name":"디지털 애니메이션 아트 현대미술 스폰지밥","stock":4,"price":"7700","status":"판매중","level":"warning","registered":"2024-07-25"},{"name":"귀여운 몰리 캐릭터 일러스트 팝아트","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2024-07-12"},{"name":"유머 미니멀리즘 현대미술 심플 강아지 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2024-07-03"},{"name":"파울 클레 현대미술 입체파 추상 포스터","stock":5,"price":"8800","status":"판매중","level":"warning","registered":"2024-06-26"},{"name":"귀여운 몰리 우주인 캐릭터 일러스트","stock":3,"price":"8800","status":"판매중","level":"danger","registered":"2024-06-19"},{"name":"파울 클레 추상화 입체파 현대미술 포스터","stock":5,"price":"8800","status":"판매중","level":"warning","registered":"2024-06-11"},{"name":"현대미술 팝컬쳐 모던 디지털 아트","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2024-06-05"},{"name":"원피스 루피 캐릭터 인테리어 포스터","stock":5,"price":"8800","status":"판매중","level":"warning","registered":"2024-05-30"},{"name":"오토모쇼헤이 일본 문신 소녀 포스터","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2024-05-21"},{"name":"앤디워홀 아이스크림 팝아트 현대미술 작품","stock":6,"price":"8800","status":"판매중","level":"warning","registered":"2024-05-15"},{"name":"앤디워홀 바나나 팝아트 작품","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2024-05-09"},{"name":"동양화 현대미술 미니멀리즘 두꺼비 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-05-03"},{"name":"귀멸의 칼날 팬아트 감성 네즈코 탄지로 일러스트 포스터","stock":9,"price":"6800","status":"판매중","level":"safe","registered":"2024-04-25"},{"name":"론잉글리쉬 소녀 캐릭터 팝아트 현대미술","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2024-04-23"},{"name":"귀여운 동물 젖소 인테리어 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-04-17"},{"name":"고질라 레트로 빈티지 팝컬쳐 포스터","stock":4,"price":"10800","status":"판매중","level":"warning","registered":"2024-04-09"},{"name":"파란 여성 인물화 모던 소피아린드 포스터","stock":16,"price":"9900","status":"판매중","level":"safe","registered":"2024-04-03"},{"name":"귀여운 소녀 캐릭터 일러스트 인테리어 포스터","stock":2,"price":"8800","status":"판매중","level":"danger","registered":"2024-03-22"},{"name":"현대미술 귀여운 소녀 캐릭터 일본 일러스트 작품","stock":1,"price":"8800","status":"판매중","level":"danger","registered":"2024-03-14"},{"name":"팝아트 현대미술 무라카미 다카시 콜라보 일러스트 작품","stock":1,"price":"8800","status":"판매중","level":"danger","registered":"2024-03-08"},{"name":"리얼리즘 자연 풍경 명화 포스터","stock":12,"price":"7800","status":"판매중","level":"safe","registered":"2024-02-29"},{"name":"민들레 자연 식물 글귀 사진 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-02-22"},{"name":"미니멀리스트 거위 일러스트 그래픽 포스터","stock":5,"price":"9800","status":"판매중","level":"warning","registered":"2024-02-14"},{"name":"레몬 모더니즘 미니멀리스트 빈티지 포스터","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2024-02-06"},{"name":"미니멀리스트 추상화 모던 디자인 부케 포스터","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2024-02-03"},{"name":"미니멀리스트 집꾸미기 현대미술 수영 포스터","stock":3,"price":"7800","status":"판매중","level":"danger","registered":"2024-01-30"},{"name":"팝아트 현대미술 다카시 해바라기 포스터 작품","stock":1,"price":"13800","status":"판매중","level":"danger","registered":"2024-01-26"},{"name":"스누피 카우스 콜라보 현대미술 일러스트 포스터","stock":4,"price":"11000","status":"판매중","level":"warning","registered":"2024-01-24"},{"name":"카우스 일러스트 현대 팝아트 인테리어 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2024-01-18"},{"name":"소피아린드 흑백 여성 인물화 현대미술 포스터","stock":22,"price":"12800","status":"판매중","level":"safe","registered":"2024-01-15"},{"name":"록키 발보아 동기부여 명언 인테리어 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-01-12"},{"name":"리얼리즘 해변 풍경 평화로운 그림 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2024-01-10"},{"name":"미키마우스 해체주의 현대미술 포스터","stock":3,"price":"10800","status":"판매중","level":"danger","registered":"2024-01-06"},{"name":"사실주의 풍경화 해변 포스터 그림","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2024-01-04"},{"name":"파리 도시 건축 스케치 드로잉 포스터","stock":3,"price":"7800","status":"판매중","level":"danger","registered":"2023-12-29"},{"name":"포스트모더니즘 현대미술 만화캐릭터 팝아트 포스터","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2023-12-26"},{"name":"미키마우스 현대미술 기하학적 디지니 아트 포스터","stock":1,"price":"7800","status":"판매중","level":"danger","registered":"2023-12-21"},{"name":"뽀빠이 해체주의 일러스트 아트 포스터","stock":4,"price":"9800","status":"판매중","level":"warning","registered":"2023-12-18"},{"name":"로봇 디자인 포스터 아트 robot collection","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-12-14"},{"name":"만화 캐릭터 도라에몽 도시 스케치 포스터","stock":2,"price":"7800","status":"판매중","level":"danger","registered":"2023-12-12"},{"name":"스폰지밥 뚱이 카우스 일러스트 포스터","stock":4,"price":"10800","status":"판매중","level":"warning","registered":"2023-12-07"},{"name":"쿠사마야요이 현대미술 작품 도쿄 포스터","stock":10,"price":"7700","status":"판매중","level":"safe","registered":"2023-12-05"},{"name":"포스터 감성 유아 레터링 꾸미기 영어 유니크 아이방","stock":11,"price":"7800","status":"판매중","level":"safe","registered":"2023-11-28"},{"name":"캐릭터 일러스트 유머 아트 포스터","stock":11,"price":"7800","status":"판매중","level":"safe","registered":"2023-11-24"},{"name":"여성 추상화 현대미술 아트 집꾸미기","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2023-11-22"},{"name":"그래피티 추상화 아트 캔버스 작품","stock":8,"price":"9800","status":"판매중","level":"safe","registered":"2023-11-17"},{"name":"캔버스 명화액자 팝아트 앤디워홀 먼로 액자 작품 포스터","stock":3,"price":"29800","status":"판매중","level":"danger","registered":"2023-11-10"},{"name":"르네 마그리트 초현실주의 명화 포스터","stock":18,"price":"7800","status":"판매중","level":"safe","registered":"2023-11-03"},{"name":"칸딘스키 음표 추상화 명화 포스터","stock":9,"price":"7800","status":"판매중","level":"safe","registered":"2023-10-25"},{"name":"추상화 인테리어 루클레시아 레이 카로 블루 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-10-20"},{"name":"여성 히어로 그래픽 팝 아트 포스터 2종","stock":12,"price":"7800","status":"판매중","level":"safe","registered":"2023-10-16"},{"name":"흑백 사자 사진 인테리어 동물 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2023-10-10"},{"name":"유화 레몬 일러스트 미니멀 포스터","stock":3,"price":"12800","status":"판매중","level":"danger","registered":"2023-10-03"},{"name":"미니멀 흑백 여성 추상화 캔버스 모던아트 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2023-09-26"},{"name":"아름다운 여인 자연 사진 포스터","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2023-09-19"},{"name":"엠마아모스 추상화 흑인 포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-09-08"},{"name":"장줄리앙 캐릭터 일러스트 팝아트 집꾸미기","stock":1,"price":"7800","status":"판매중","level":"danger","registered":"2023-09-05"},{"name":"엠마아모스 흑백 추상화 포스터","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2023-08-30"},{"name":"생기그림 식물 유화 친환경 인테리어 포스터","stock":3,"price":"6800","status":"판매중","level":"danger","registered":"2023-08-25"},{"name":"흑백 여인 여성 실루엣 포스터","stock":12,"price":"6800","status":"판매중","level":"safe","registered":"2023-08-21"},{"name":"귀여운 동물 고양이 일러스트 인테리어액자","stock":14,"price":"6800","status":"판매중","level":"safe","registered":"2023-08-11"},{"name":"에어포스 신발 일러스트 포스터 2종","stock":9,"price":"6800","status":"판매중","level":"safe","registered":"2023-08-10"},{"name":"풍경화 센스있는집들이선물 거실액자","stock":3,"price":"8800","status":"판매중","level":"danger","registered":"2023-08-01"},{"name":"피카소그림 현대미술 심플 포스터","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2023-07-26"},{"name":"세서미 스트리트 카우스 콜라보 일러스트 포스터 4종","stock":14,"price":"8800","status":"판매중","level":"safe","registered":"2023-07-24"},{"name":"오리그림 저크페이스 팝아트 일러스트그림","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-03-20"},{"name":"스파이더맨그림 현대미술작가 캐릭터그림","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-03-13"},{"name":"구스타프 클림트 자화상 명화그림","stock":12,"price":"7800","status":"판매중","level":"safe","registered":"2023-03-08"},{"name":"고마워랑 귀여운 캐릭터그림 현대작가그림","stock":8,"price":"8800","status":"판매중","level":"safe","registered":"2023-03-03"},{"name":"고흐그림 아몬드나무 고흐별이빛나는밤에 빈센트","stock":12,"price":"60000","status":"판매중","level":"safe","registered":"2023-02-28"},{"name":"구스타프클림트 명화액자 클림트생명의나무","stock":6,"price":"69800","status":"판매중","level":"warning","registered":"2023-02-16"},{"name":"힙한 카페 인테리어 액자 스텐실 그래피티 스타일 아트 포스터","stock":11,"price":"7800","status":"판매중","level":"safe","registered":"2023-02-15"},{"name":"칸딘스키작품 추상화 명화액자 인테리어포스터","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-02-08"},{"name":"모던아트 슈퍼마리오 일러스트그림 캔버스페인팅","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2023-02-05"},{"name":"핀업걸 현대미술 캔버스페인팅 질엘그렌 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2023-01-30"},{"name":"피카츄 아이 일러스트 아이방액자","stock":8,"price":"8800","status":"판매중","level":"safe","registered":"2023-01-27"},{"name":"고마워랑 정물화 유화액자 캔버스페인팅","stock":11,"price":"6800","status":"판매중","level":"safe","registered":"2023-01-19"},{"name":"일러스트그림 중국작가 귀여운캐릭터그림","stock":4,"price":"8800","status":"판매중","level":"warning","registered":"2023-01-17"},{"name":"길거리그림 스트리트그림 미스터브레인워시 포스터","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2023-01-10"},{"name":"인테리어그림 샘토프트 일러스트 포스터","stock":17,"price":"6800","status":"판매중","level":"safe","registered":"2023-01-04"},{"name":"우키요에 일러스트그림 리자몽 거북왕 포스터","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-12-28"},{"name":"슬램덩크액자 인테리어그림 애니메이션 포스터","stock":1,"price":"6800","status":"판매중","level":"danger","registered":"2022-12-26"},{"name":"고래그림 유화그림 아이방 거실 대형 캔버스","stock":1,"price":"128000","status":"판매중","level":"danger","registered":"2022-12-21"},{"name":"귀여운그림 일러스트그림 동물 발자국 흑백 포스터","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2022-12-20"},{"name":"팝아트 도라에몽 40x40cm 캐릭터 해바라기 A타입 포스터","stock":7,"price":"8800","status":"판매중","level":"safe","registered":"2022-12-15"},{"name":"식물그림 일러스트 꽃 잎 그림 인테리어 포스터","stock":12,"price":"6800","status":"판매중","level":"safe","registered":"2022-12-14"},{"name":"크리스마스그림 크리스마스 일러스트 선물 액자","stock":12,"price":"6800","status":"판매중","level":"safe","registered":"2022-12-07"},{"name":"추상화 손그림 북유럽 노르딕모던 포스터","stock":12,"price":"8800","status":"판매중","level":"safe","registered":"2022-12-02"},{"name":"동물그림 일러스트그림 일러스트 치타 팝아트 액자","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-11-26"},{"name":"초상화 일러스트그림 흑인 여성 일러스트","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-11-23"},{"name":"모네그림 풍경화 생트아드레스해변 명화 액자","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-22"},{"name":"고마워랑 모네그림 풍경화 해돋이 포스터","stock":6,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-16"},{"name":"모네그림 풍경화 인상주의 바다 명화 액자","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-16"},{"name":"초상화 일러스트그림 다채로운 추상화 일러스트","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-11-12"},{"name":"고마워랑 윌리엄모리스 명화액자 꽃 무늬 식물","stock":4,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-11"},{"name":"윌리엄모리스 명화액자 꽃 무늬 벽장식 그림","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-10"},{"name":"윌리엄모리스 명화액자 꽃 무늬 그림","stock":5,"price":"7800","status":"판매중","level":"warning","registered":"2022-11-09"},{"name":"흑백그림 지브리 이웃집토토로 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-11-05"},{"name":"인물화 손그림 소라야마하지메 판화 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-10-13"},{"name":"유화그림 일러스트 아이방 인테리어 액자","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-10-10"},{"name":"모던아트 여성초상화 인테리어 소녀 그림","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-10-07"},{"name":"인물화 손그림 소라야마하지메 원더우먼 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-10-04"},{"name":"팝아트 톰과제리액자 카툰 일러스트 Broos 그림","stock":7,"price":"9800","status":"판매중","level":"safe","registered":"2022-10-01"},{"name":"일러스트그림 캔버스페인팅 귀여운 캐릭터 RyokoKaneta 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-28"},{"name":"카우스액자 카우스그림 KAWS 캐릭터 그림","stock":9,"price":"6800","status":"판매중","level":"safe","registered":"2022-09-26"},{"name":"여름이미지 여름풍경 핑크 풍경 바다 사진","stock":28,"price":"6800","status":"판매중","level":"safe","registered":"2022-09-22"},{"name":"인물화 손그림 소라야마하지메 잔다르크 일러스트 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-22"},{"name":"초상화 유화그림 존라리바 인물화 그림","stock":9,"price":"6800","status":"판매중","level":"safe","registered":"2022-09-18"},{"name":"초상화 손그림 소피아보나티 인물화 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-09"},{"name":"인물화 유화액자 아모아코보아포 여성 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-08"},{"name":"타이포그래피 여자일러스트 벽인테리어 명언 액자","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-05"},{"name":"인물화 아모아코보아포 멋있는 여성 그림","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-02"},{"name":"카우스그림 일러스트 베어브릭스 캐릭터 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-09-01"},{"name":"인물화 팝아트 흑인여성 일러스트 그림","stock":3,"price":"6800","status":"판매중","level":"danger","registered":"2022-08-31"},{"name":"자화상 명화액자 아모아코보아포 유화 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-08-30"},{"name":"인물화 명화액자 아모아코보아포 유화 그림","stock":3,"price":"6800","status":"판매중","level":"danger","registered":"2022-08-25"},{"name":"팝아트 해바라기액자 현대미술작가 무라카미다카시 캔버스액자","stock":10,"price":"49800","status":"판매중","level":"safe","registered":"2022-08-24"},{"name":"해바라기액자 반고흐그림 명화 돈들어오는 그림","stock":3,"price":"9800","status":"판매중","level":"danger","registered":"2022-08-22"},{"name":"밤의카페테라스 반고흐그림 명화 고흐 그림","stock":2,"price":"9800","status":"판매중","level":"danger","registered":"2022-08-19"},{"name":"별이빛나는밤 명화액자 유화 반고흐 그림","stock":3,"price":"9800","status":"판매중","level":"danger","registered":"2022-08-18"},{"name":"토끼일러스트 귀여운그림 아이방 토끼 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-08-16"},{"name":"다람쥐그림 유화액자 일러스트 거실 액자","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-08-16"},{"name":"해바라기액자 돈들어오는그림 해바라기 유화 액자","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-08-11"},{"name":"고래그림 유화액자 인테리어 우영우 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-08-05"},{"name":"일러스트그림 거실액자 인테리어 일러스트 말 거실 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-23"},{"name":"일러스트 인테리어그림 인테리어 그랑프리까레 현관 거실 액자","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-22"},{"name":"프랑스화가 풍경화 인테리어 거실 명화 유화 액자","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-19"},{"name":"돈들어오는그림 사진액자 인테리어 풍경화 거실 액자","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-13"},{"name":"프랑스화가 명화액자 거실 카미유코로 유화 그림","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-07"},{"name":"명화액자 그래피티액자 인테리어 거실 명화 바스키아 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-07-05"},{"name":"동물액자 일러스트그림 귀여운 일러스트 라이온킹 그림","stock":13,"price":"6800","status":"판매중","level":"safe","registered":"2022-06-18"},{"name":"나루토 일러스트 인테리어 포스터","stock":6,"price":"6800","status":"판매중","level":"warning","registered":"2022-06-18"},{"name":"만화일러스트 거실액자 캔버스 귀여운 벼랑위의포뇨 일러스트 그림","stock":3,"price":"6800","status":"판매중","level":"danger","registered":"2022-06-17"},{"name":"귀여운그림 아트포스터 귀여운 일러스트 이웃집토토로 그림","stock":8,"price":"6800","status":"판매중","level":"safe","registered":"2022-06-17"},{"name":"동물액자 유화액자 귀여운 일러스트 라마 그림","stock":23,"price":"6800","status":"판매중","level":"safe","registered":"2022-06-16"},{"name":"추상화 타이포그래피 거실 캘리그라피 액자","stock":18,"price":"6800","status":"판매중","level":"safe","registered":"2022-06-07"},{"name":"아이돌그림 일러스트그림 거실 방탄소년단 액자","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2022-03-30"},{"name":"애니그림 일러스트그림 리그오브레전드 아케인 인테리어 액자","stock":30,"price":"9800","status":"판매중","level":"safe","registered":"2022-03-30"},{"name":"뱅크시그림 명화액자 흑백 뱅크시 그림","stock":7,"price":"8800","status":"판매중","level":"safe","registered":"2022-01-25"},{"name":"흑백그림 타이포그래피 거실 연인 액자","stock":7,"price":"6800","status":"판매중","level":"safe","registered":"2022-01-22"},{"name":"바다사진 풍경사진 거실 바다 그림","stock":4,"price":"6800","status":"판매중","level":"warning","registered":"2022-01-19"},{"name":"초상화 일러스트그림 훌리아오즈데미르 자화상 액자","stock":10,"price":"6800","status":"판매중","level":"safe","registered":"2021-11-20"},{"name":"초상화 명화액자 훌리아오즈데미르 일러스트 액자","stock":30,"price":"6800","status":"판매중","level":"safe","registered":"2021-11-20"},{"name":"초상화 일러스트그림 브라질 작가그림","stock":15,"price":"6800","status":"판매중","level":"safe","registered":"2021-11-20"},{"name":"유명 도시 일러스트 풍경화 파스텔 인테리어 액자","stock":41,"price":"6800","status":"판매중","level":"safe","registered":"2021-10-15"},{"name":"풍경화 유화액자 일출 유화그림","stock":14,"price":"6800","status":"판매중","level":"safe","registered":"2021-10-12"},{"name":"귀여운그림 스파이더맨 헐크 배트맨 토르 히어로 포스터","stock":51,"price":"6800","status":"판매중","level":"safe","registered":"2021-10-05"},{"name":"가나가와 명화액자 유화 해변의높은파도아래 그림","stock":6,"price":"8800","status":"판매중","level":"warning","registered":"2021-08-28"},{"name":"데이비드호크니그림 명화액자 캔버스 유화 그림","stock":10,"price":"6800","status":"판매중","level":"safe","registered":"2021-08-27"},{"name":"몬드리안그림 추상화 몬드리안 명화 액자","stock":8,"price":"6800","status":"판매중","level":"safe","registered":"2021-08-25"},{"name":"에곤쉴레그림 현대미술 여성 자화상 그림","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2021-06-24"},{"name":"여름이미지 서핑사진 여름풍경 야자수 바다사진","stock":22,"price":"6800","status":"판매중","level":"safe","registered":"2021-06-22"},{"name":"꽃사진 생기그림 미니멀 인테리어 사진 액자","stock":20,"price":"6800","status":"판매중","level":"safe","registered":"2021-06-18"},{"name":"에곤쉴레 자화상 현대미술 에곤실레 액자","stock":15,"price":"6800","status":"판매중","level":"safe","registered":"2021-05-31"},{"name":"흑백사진 풍수그림 복을부르는 동물 액자","stock":24,"price":"6800","status":"판매중","level":"safe","registered":"2021-05-25"},{"name":"에곤쉴레 정물화 풍경화 에곤실레 명화 액자","stock":17,"price":"6800","status":"판매중","level":"safe","registered":"2021-05-25"},{"name":"배트맨 그래피티아트 인테리어포스터","stock":8,"price":"6800","status":"판매중","level":"safe","registered":"2021-05-11"},{"name":"바우하우스포스터 추상화 현대미술 미드센추리 액자","stock":16,"price":"82500","status":"판매중","level":"safe","registered":"2021-04-20"},{"name":"드로잉 흑백그림 인테리어그림","stock":30,"price":"6800","status":"판매중","level":"safe","registered":"2021-04-14"},{"name":"풍경그림 현대미술 3부작 인테리어포스터","stock":9,"price":"110000","status":"판매중","level":"safe","registered":"2021-04-15"},{"name":"앙리마티스그림 추상화 인테리어포스터 명화그림","stock":5,"price":"82500","status":"판매중","level":"warning","registered":"2021-04-14"},{"name":"핑크 튤립 꽃 러브 포스터","stock":49,"price":"6800","status":"판매중","level":"safe","registered":"2021-01-30"},{"name":"흑백 꽃그림 스케치 손그림","stock":15,"price":"5800","status":"판매중","level":"safe","registered":"2021-01-24"},{"name":"에펠탑 핑크 풍경화 그림 포스터","stock":10,"price":"6800","status":"판매중","level":"safe","registered":"2021-01-16"},{"name":"반고흐 명화 유화 캔버스액자 거실액자","stock":25,"price":"82500","status":"판매중","level":"safe","registered":"2020-12-27"},{"name":"귀여운 동물 그림 일러스트 포스터","stock":33,"price":"6800","status":"판매중","level":"safe","registered":"2020-12-11"},{"name":"데이비드호크니액자 더큰첨벙 데이비드호크니 포스터","stock":5,"price":"6800","status":"판매중","level":"warning","registered":"2020-12-08"},{"name":"바다사진 돈들어오는그림 거실 풍경 사진 일출 액자","stock":29,"price":"6800","status":"판매중","level":"safe","registered":"2020-12-08"},{"name":"흑백사진 복을부르는 코끼리 얼룩말 동물사진 포스터","stock":29,"price":"6800","status":"판매중","level":"safe","registered":"2020-12-05"},{"name":"귀여운그림 동물액자 양 토끼 고래 그림","stock":22,"price":"6800","status":"판매중","level":"safe","registered":"2020-11-30"},{"name":"사자그림 현대미술 팝아트 유화 액자","stock":7,"price":"6800","status":"판매중","level":"safe","registered":"2020-11-30"},{"name":"귀여운 타이포그래피 동물그림 포스터","stock":24,"price":"6800","status":"판매중","level":"safe","registered":"2020-11-22"},{"name":"돈을부르는 황금 잎 포스터 풍수액자","stock":23,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-27"},{"name":"느낌있는 분홍색 꽃그림 포스터","stock":18,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-22"},{"name":"아마존 흑백 연기 소녀그림 현대미술 포스터","stock":20,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-17"},{"name":"귀여운 우주인 그림 포스터 3종","stock":36,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-17"},{"name":"귀여운 풍선 동물그림 포스터 3종","stock":39,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-17"},{"name":"생기그림 식물그림 거실 인테리어 액자","stock":31,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-15"},{"name":"마블포스터 히어로액자 스파이더맨 배트맨 조커 데드풀 할리퀸 그림","stock":45,"price":"6800","status":"판매중","level":"safe","registered":"2020-07-15"}];
+
+// 품절/판매금지 제외한 실제 관리 대상만
+const PRODUCTS = RAW.filter(p => !['판매중지','판매금지'].includes(p.status));
+
+let currentFilter = 'all';
+let sizeData = {};
+
+function loadSizeData() {
+  try {
+    const saved = localStorage.getItem('gomaworang_sizes');
+    if (saved) sizeData = JSON.parse(saved);
+  } catch(e) {}
+}
+
+function saveSizeData(idx, field, val) {
+  if (!sizeData[idx]) sizeData[idx] = {s3040:0, s4060:0, s5070:0};
+  sizeData[idx][field] = parseInt(val) || 0;
+  localStorage.setItem('gomaworang_sizes', JSON.stringify(sizeData));
+  const now = new Date().toLocaleString('ko-KR');
+  document.getElementById('lastSaved').textContent = '저장됨 ' + now;
+  const btn = document.getElementById('btn_' + idx);
+  if (btn) {
+    btn.textContent = '저장됨';
+    btn.classList.add('saved');
+    setTimeout(() => { btn.textContent = '저장'; btn.classList.remove('saved'); }, 1500);
+  }
+}
+
+function setFilter(f, el) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  render();
+}
+
+function getLevelLabel(level) {
+  const map = { empty: '품절', danger: '위험', warning: '주의', safe: '안전' };
+  return map[level] || level;
+}
+
+function getStatusClass(status) {
+  if (status === '판매중') return 'status-selling';
+  if (status === '품절') return 'status-soldout';
+  return 'status-stop';
+}
+
+function renderSummary() {
+  const counts = { empty:0, danger:0, warning:0, safe:0 };
+  PRODUCTS.forEach(p => counts[p.level]++);
+  document.getElementById('summary').innerHTML = `
+    <div class="stat-card c-empty" onclick="setFilter('empty', document.querySelectorAll('.filter-tab')[1])">
+      <div class="label"><span class="dot" style="background:var(--empty)"></span>품절</div>
+      <div class="number">${counts.empty}</div>
+      <div class="sub">즉시 재입고 필요</div>
+    </div>
+    <div class="stat-card c-danger" onclick="setFilter('danger', document.querySelectorAll('.filter-tab')[2])">
+      <div class="label"><span class="dot" style="background:var(--danger)"></span>위험 (1~3개)</div>
+      <div class="number">${counts.danger}</div>
+      <div class="sub">곧 품절 예정</div>
+    </div>
+    <div class="stat-card c-warning" onclick="setFilter('warning', document.querySelectorAll('.filter-tab')[3])">
+      <div class="label"><span class="dot" style="background:var(--warning)"></span>주의 (4~6개)</div>
+      <div class="number">${counts.warning}</div>
+      <div class="sub">재입고 준비 필요</div>
+    </div>
+    <div class="stat-card c-safe" onclick="setFilter('safe', document.querySelectorAll('.filter-tab')[4])">
+      <div class="label"><span class="dot" style="background:var(--safe)"></span>안전 (7개+)</div>
+      <div class="number">${counts.safe}</div>
+      <div class="sub">여유 있음</div>
+    </div>
+  `;
+}
+
+function render() {
+  const query = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+
+  let filtered = PRODUCTS.filter(p => {
+    const matchSearch = !query || p.name.toLowerCase().includes(query);
+    const matchFilter = currentFilter === 'all' || p.level === currentFilter;
+    return matchSearch && matchFilter;
+  });
+
+  filtered.sort((a, b) => {
+    if (sort === 'stock_asc') return a.stock - b.stock;
+    if (sort === 'stock_desc') return b.stock - a.stock;
+    if (sort === 'name_asc') return a.name.localeCompare(b.name, 'ko');
+    if (sort === 'date_desc') return new Date(b.registered) - new Date(a.registered);
+    return 0;
+  });
+
+  document.getElementById('resultCount').textContent = `${filtered.length}개 상품`;
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  const originalIndexMap = new Map(PRODUCTS.map((p, i) => [p.name, i]));
+
+  tbody.innerHTML = filtered.map((p, i) => {
+    const idx = originalIndexMap.get(p.name);
+    const sd = sizeData[idx] || {s3040:0, s4060:0, s5070:0};
+    const price = parseInt(p.price).toLocaleString();
+    return `
+      <tr>
+        <td style="color:var(--muted);font-size:12px">${i+1}</td>
+        <td><div class="product-name">${p.name}</div></td>
+        <td>
+          <span class="stock-total ${p.level}">${p.stock}</span>
+          <span class="badge badge-${p.level}" style="margin-left:6px">${getLevelLabel(p.level)}</span>
+        </td>
+        <td>
+          <div class="size-group">
+            <span class="size-label">30×40</span>
+            <input class="size-input" type="number" min="0" value="${sd.s3040}"
+              onchange="saveSizeData(${idx},'s3040',this.value)" id="s3040_${idx}">
+          </div>
+        </td>
+        <td>
+          <div class="size-group">
+            <span class="size-label">40×60</span>
+            <input class="size-input" type="number" min="0" value="${sd.s4060}"
+              onchange="saveSizeData(${idx},'s4060',this.value)" id="s4060_${idx}">
+          </div>
+        </td>
+        <td>
+          <div class="size-group">
+            <span class="size-label">50×70</span>
+            <input class="size-input" type="number" min="0" value="${sd.s5070}"
+              onchange="saveSizeData(${idx},'s5070',this.value)" id="s5070_${idx}">
+          </div>
+        </td>
+        <td class="price">₩${price}</td>
+        <td><span class="status-badge ${getStatusClass(p.status)}">${p.status}</span></td>
+        <td><button class="save-btn" id="btn_${idx}"
+          onclick="saveSizeData(${idx},'s3040',document.getElementById('s3040_${idx}').value);saveSizeData(${idx},'s4060',document.getElementById('s4060_${idx}').value);saveSizeData(${idx},'s5070',document.getElementById('s5070_${idx}').value)">저장</button></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+loadSizeData();
+renderSummary();
+render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('SW 등록 완료'))
+      .catch(e => console.log('SW 등록 실패', e));
+  });
+}
+</script>
+</body>
+</html>
